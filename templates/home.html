@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Homepage</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body>
+<h1>Book Database</h1>
+<div id="div1">
+<p> {{ var }} </p>
+
+<form method="POST">
+    <input type="text" name="q" placeholder="Search by id, title, author..." style="width: 200px;">
+    <button formaction="/search"> Cerca </button>
+    <br>
+    <hr>
+    <button formaction="/all"> Show all the books </button>
+</form>
+</div>
+</body>
+</html>
