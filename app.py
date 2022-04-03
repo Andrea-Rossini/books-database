@@ -1,4 +1,6 @@
 from flask import Flask, request, render_template, jsonify, redirect
+import sqlite3 as sql
+import json
 
 app = Flask(__name__)
 
@@ -6,19 +8,27 @@ id=None
 
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
 
-books = [
-    {'id': 0, 'title':'I promessi sposi', 'author':'Alessandro Manzoni'},
-    {'id': 1, 'title':'La divina commedia', 'author':'Dante Alighieri'},
-    {'id': 2, 'title':'Il decamerone', 'author':'Francesco Petrarca'},
-    {'id': 3, 'title':'Il codice Da Vinci', 'author':'Dan Brown'},
-    {'id': 4, 'title':'Il giro del mondo in 80 giorni', 'author':'Jules Verne'},
-    {'id': 5, 'title':'L\'alchimista', 'author':'Paulo Coelho'},
-    {'id': 6, 'title':'Harry Potter e la Pietra Filosofale', 'author':'J.K. Rowling'},
-    {'id': 80, 'title':'Ottanta', 'author':'Ottantesimi'}
-]
 def split_query(qr):
     qr = qr.split()
     return qr
+
+def dic_fun(cur, data):
+    ar = []
+    for row in data:
+        dic = {}
+        for idx, i in enumerate(cur.description):
+            dic[i[0]] = row[idx]
+        ar.append(dic)
+    return ar
+
+def sqlquery(qry):
+    conn = sql.connect('books.db')
+    cur = conn.cursor()
+
+    cur.execute(qry)
+
+    rows=cur.fetchall()
+    return jsonify(dic_fun(cur, rows))
 
 @app.route("/")
 def home():
@@ -28,25 +38,93 @@ def home():
 @app.route("/search", methods=['GET'])
 def query():
     results = []
-    q = split_query(request.args.get("q"))
-    for book in books:
-        for el in q:
-            if str(book["id"]) == el or el.lower() in book["title"].lower() or el.lower() in book["author"].lower():
-                results.append(book)
-                break
-    return jsonify(results)
-    #return "q = "+request.args.get("q")+"\nsplitted = "+str(q)
+    title = request.args.get("title")
+    author = request.args.get("author")
+    id = request.args.get("id")
+    isbn = request.args.get("isbn")
+    q_dict = dict({})
+
+    if title is not None:
+        title_query = "title LIKE '%"+title+"%'"
+        q_dict['title'] = title_query
+
+    if author is not None:
+        author_query = "authors LIKE '%" + author + "%'"
+        q_dict['author'] = author_query
+
+    if id is not None:
+        id_query = "bookID = " + id
+        q_dict['id'] = id_query
+
+    if isbn is not None:
+        isbn_query = "isbn LIKE '%" + isbn + "%'"
+        q_dict['isbn'] = isbn_query
+
+    q_string = "SELECT * FROM books WHERE "
+
+    for idx, val in enumerate(q_dict.values()):
+        if idx < len(q_dict.values())-1:
+            q_string += val+" AND "
+        else:
+            q_string += val+";"
+
+    """for el in q:
+        for book in books:
+                for el in q:
+                    if str(book["id"]) == el or el.lower() in book["title"].lower() or el.lower() in book["author"].lower():
+                        results.append(book)
+                        break"""
+    return sqlquery(q_string)
 
 
 @app.route("/search", methods=["POST"])
 def search():
-    q = request.form.get("q")
-    return redirect("/search?q="+str(q))
+    p_title = request.form.get("title")
+    p_author = request.form.get("author")
+    p_id = request.form.get("id")
+    p_isbn = request.form.get("isbn")
+    p_dict = {}
+    p_string = "/search?"
 
-@app.route("/all", methods=["POST"])
+    if p_title != "":
+        title_par = "title="+p_title
+        p_dict['title'] = title_par
+
+    if p_author != "":
+        author_par = "author=" + p_author
+        p_dict['author'] = author_par
+
+    if p_id != "":
+        id_par = "id=" + p_id
+        p_dict['id'] = id_par
+
+    if p_isbn != "":
+        isbn_par = "isbn=" + p_isbn
+        p_dict['isbn'] = isbn_par
+
+    for idx, val in enumerate(p_dict.values()):
+        if idx < len(p_dict.values())-1:
+            p_string += val+"&"
+        else:
+            p_string += val
+
+    return redirect(p_string)
+
+@app.route("/all", methods=["POST", "GET"])
 def all():
-    return jsonify(books)
+    qry = "SELECT * FROM books;"
+    return sqlquery(qry)
+
+@app.route("/query", methods=["GET", "POST"])
+def sqlquery1(var):
+    conn = sql.connect('books.db')
+    cur = conn.cursor()
+
+    cur.execute("SELECT * FROM books WHERE LOWER(bookID) LIKE '%"+var.lower()+"% OR LOWER(title) LIKE '%"+var.lower()+"% OR LOWER(authors) LIKE '%"+var.lower()+"% OR LOWER(average_rating) LIKE '%"+var.lower()+"% OR LOWER(isbn) LIKE '%"+var.lower()+"% OR LOWER(isbn13) LIKE '%"+var.lower()+"% OR LOWER(language_code) LIKE '%"+var.lower()+"% OR LOWER(num_pages) LIKE '%"+var.lower()+"% OR LOWER(ratings_count) LIKE '%"+var.lower()+"% OR LOWER(text_reviews_count) LIKE '%"+var.lower()+"% OR LOWER(publication_date) LIKE '%"+var.lower()+"% OR LOWER(publisher) LIKE '%"+var.lower()+"%")
+
+    rows=cur.fetchall()
+    return jsonify(dic_fun(cur, rows))
 
 
 if __name__ == '__main__':
-   app.run(debug=true)
+   app.run(debug=True)
