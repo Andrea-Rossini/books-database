@@ -35,12 +35,12 @@ def home():
     var = "This is a simple API that fetch infos about books, you can search by id, title or author"
     return render_template('home.html', var=var)
 
-@app.route("/search", methods=['GET'])
+@app.route("/search", methods=["GET"])
 def query():
     results = []
     title = request.args.get("title")
     author = request.args.get("author")
-    id = request.args.get("id")
+    category = request.args.get("category")
     isbn = request.args.get("isbn")
     q_dict = dict({})
 
@@ -52,9 +52,9 @@ def query():
         author_query = "authors LIKE '%" + author + "%'"
         q_dict['author'] = author_query
 
-    if id is not None:
-        id_query = "bookID = " + id
-        q_dict['id'] = id_query
+    if category is not None:
+        category_query = "categories LIKE'%" + category
+        q_dict['category'] = category_query
 
     if isbn is not None:
         isbn_query = "isbn LIKE '%" + isbn + "%'"
@@ -81,7 +81,7 @@ def query():
 def search():
     p_title = request.form.get("title")
     p_author = request.form.get("author")
-    p_id = request.form.get("id")
+    p_category = request.form.get("category")
     p_isbn = request.form.get("isbn")
     p_dict = {}
     p_string = "/search?"
@@ -94,9 +94,9 @@ def search():
         author_par = "author=" + p_author
         p_dict['author'] = author_par
 
-    if p_id != "":
-        id_par = "id=" + p_id
-        p_dict['id'] = id_par
+    if p_category != "":
+        category_par = "id=" + p_category
+        p_dict['category'] = category_par
 
     if p_isbn != "":
         isbn_par = "isbn=" + p_isbn
@@ -110,7 +110,7 @@ def search():
 
     return redirect(p_string)
 
-@app.route("/all", methods=["POST", "GET"])
+@app.route("/all", methods=["POST"])
 def all():
     qry = "SELECT * FROM books;"
     return sqlquery(qry)
@@ -120,7 +120,7 @@ def sqlquery1(var):
     conn = sql.connect('books.db')
     cur = conn.cursor()
 
-    cur.execute("SELECT * FROM books WHERE LOWER(bookID) LIKE '%"+var.lower()+"% OR LOWER(title) LIKE '%"+var.lower()+"% OR LOWER(authors) LIKE '%"+var.lower()+"% OR LOWER(average_rating) LIKE '%"+var.lower()+"% OR LOWER(isbn) LIKE '%"+var.lower()+"% OR LOWER(isbn13) LIKE '%"+var.lower()+"% OR LOWER(language_code) LIKE '%"+var.lower()+"% OR LOWER(num_pages) LIKE '%"+var.lower()+"% OR LOWER(ratings_count) LIKE '%"+var.lower()+"% OR LOWER(text_reviews_count) LIKE '%"+var.lower()+"% OR LOWER(publication_date) LIKE '%"+var.lower()+"% OR LOWER(publisher) LIKE '%"+var.lower()+"%")
+    cur.execute("SELECT * FROM books WHERE LOWER(categories) LIKE '%"+var.lower()+"% OR LOWER(title) LIKE '%"+var.lower()+"% OR LOWER(authors) LIKE '%"+var.lower()+"% OR LOWER(average_rating) LIKE '%"+var.lower()+"% OR LOWER(isbn) LIKE '%"+var.lower()+"% OR LOWER(isbn13) LIKE '%"+var.lower()+"% OR LOWER(language_code) LIKE '%"+var.lower()+"% OR LOWER(num_pages) LIKE '%"+var.lower()+"% OR LOWER(ratings_count) LIKE '%"+var.lower()+"% OR LOWER(text_reviews_count) LIKE '%"+var.lower()+"% OR LOWER(publication_date) LIKE '%"+var.lower()+"% OR LOWER(publisher) LIKE '%"+var.lower()+"%")
 
     rows=cur.fetchall()
     return jsonify(dic_fun(cur, rows))
